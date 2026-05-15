@@ -18,10 +18,10 @@ runner = CliRunner()
 
 
 def test_version() -> None:
-    """--version flag returns 0.1.0 and exits 0."""
+    """--version flag returns current version and exits 0."""
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
-    assert "0.1.0" in result.stdout
+    assert "0.1.1" in result.stdout
 
 
 def test_help() -> None:
@@ -65,6 +65,76 @@ def test_cli_gate_check_failure_exits_nonzero(mock_run: MagicMock, tmp_path: Pat
         )
         result = runner.invoke(app, ["gate", "check", "gate-lint"])
     assert result.exit_code == 1
+
+
+# ── v0.1.1: --verbose flag tests ──
+
+
+@patch("rai_frontend_gates.gates.npm.run_npm_script")
+def test_cli_gate_check_verbose_prints_raw_output_on_failure(
+    mock_run: MagicMock, tmp_path: Path
+) -> None:
+    """--verbose flag forwards raw_output (stdout+stderr) on failure."""
+    mock_run.return_value = MagicMock(
+        returncode=1,
+        stdout="/foo.vue\n  1:1  error  bad stuff  no-x\n",
+        stderr="✖ 1 problem",
+    )
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        Path("package.json").write_text(
+            json.dumps({"name": "x", "version": "0.1.0", "scripts": {"lint": "eslint"}}),
+            encoding="utf-8",
+        )
+        result = runner.invoke(app, ["gate", "check", "gate-lint", "--verbose"])
+    assert result.exit_code == 1
+    # Raw output details should be printed when --verbose set on failure
+    assert "bad stuff" in result.stdout
+    assert "no-x" in result.stdout
+    assert "✖ 1 problem" in result.stdout
+
+
+@patch("rai_frontend_gates.gates.npm.run_npm_script")
+def test_cli_gate_check_verbose_silent_on_success(
+    mock_run: MagicMock, tmp_path: Path
+) -> None:
+    """--verbose stays quiet on success (no raw_output forwarding when passed)."""
+    mock_run.return_value = MagicMock(
+        returncode=0,
+        stdout="some verbose passing output that shouldn't be printed",
+        stderr="",
+    )
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        Path("package.json").write_text(
+            json.dumps({"name": "x", "version": "0.1.0", "scripts": {"lint": "eslint"}}),
+            encoding="utf-8",
+        )
+        result = runner.invoke(app, ["gate", "check", "gate-lint", "--verbose"])
+    assert result.exit_code == 0
+    assert "gate-lint passed" in result.stdout
+    # Raw output is NOT forwarded on success (verbose is failure-only)
+    assert "some verbose passing output" not in result.stdout
+
+
+@patch("rai_frontend_gates.gates.npm.run_npm_script")
+def test_cli_gate_check_no_verbose_silent_on_failure(
+    mock_run: MagicMock, tmp_path: Path
+) -> None:
+    """Without --verbose, failure output stays minimal (backward compat)."""
+    mock_run.return_value = MagicMock(
+        returncode=1,
+        stdout="should not appear",
+        stderr="also should not appear",
+    )
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        Path("package.json").write_text(
+            json.dumps({"name": "x", "version": "0.1.0", "scripts": {"lint": "eslint"}}),
+            encoding="utf-8",
+        )
+        result = runner.invoke(app, ["gate", "check", "gate-lint"])
+    assert result.exit_code == 1
+    assert "gate-lint failed" in result.stdout
+    # Raw output stays hidden without --verbose (v0.1.0 behavior preserved)
+    assert "should not appear" not in result.stdout
     assert "failed" in result.stdout
 
 

@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] — 2026-05-15
+
+### Added
+
+- **`--verbose` / `-v` flag** for `rai-frontend gate check` — forwards raw npm stdout/stderr on failure (failure-only; success output stays minimal). Closes UX gap discovered in E30 S30.3 real-world smoke: previously `gate-lint failed (exit 1)` showed no error details, forcing users to re-run `npm run lint` directly.
+
+### Changed
+
+- 3 new tests for `--verbose` flag (39/39 total; coverage 96% maintained).
+- `cli.py` 58 → 62 LOC (single-feature addition).
+
+### Notes
+
+- Backward-compatible: `gate check` without `--verbose` preserves v0.1.0 minimal output behavior.
+
 ## [0.1.0] — 2026-05-15
 
 ### Added
