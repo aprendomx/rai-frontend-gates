@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rai-frontend-gates"
-version = "0.1.0"
+version = "0.1.1"
 description = "Frontend stack gate wrapper for rai-cli (npm/vitest/eslint/build)"
 authors = [{name = "Julio Adrián", email = "jadrian.s@gmail.com"}]
 readme = "README.md"

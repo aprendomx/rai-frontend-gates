@@ -49,6 +49,12 @@ def gate_check(
     gate_id: str = typer.Argument(..., help="Gate identifier (gate-tests, gate-lint, gate-build)"),
     scope: str | None = typer.Option(None, "--scope", help="Path scope passed as extra arg to npm script"),
     delta: bool = typer.Option(False, "--delta", help="Show delta vs cached baseline (gate-lint only)"),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose",
+        "-v",
+        help="Print raw npm stdout/stderr on failure (v0.1.1+; failure-only)",
+    ),
 ) -> None:
     """Run a frontend gate via npm and report results."""
     cwd = Path.cwd()
@@ -62,6 +68,11 @@ def gate_check(
     typer.echo(result.message)
     for detail in result.details:
         typer.echo(detail)
+    # v0.1.1: forward raw npm output on failure when --verbose is set
+    if verbose and not result.passed and result.raw_output:
+        typer.echo("")
+        typer.echo("--- raw npm output ---")
+        typer.echo(result.raw_output)
     raise typer.Exit(code=result.exit_code)
 
 
